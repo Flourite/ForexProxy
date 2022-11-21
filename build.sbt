@@ -3,7 +3,7 @@ import Dependencies._
 name := "forex"
 version := "1.0.1"
 
-scalaVersion := "2.13.5"
+scalaVersion := "2.13.8"
 scalacOptions ++= Seq(
   "-deprecation", // Emit warning and location for usages of deprecated APIs.
   "-encoding",
@@ -50,7 +50,7 @@ resolvers +=
   "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
 libraryDependencies ++= Seq(
-  compilerPlugin(Libraries.kindProjector),
+  compilerPlugin(Libraries.kindProjector cross CrossVersion.full),
   Libraries.cats,
   Libraries.catsEffect,
   Libraries.fs2,
