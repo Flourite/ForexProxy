@@ -4,7 +4,6 @@ import cats.effect.Concurrent
 import cats.implicits.{catsSyntaxApplicativeId, catsSyntaxEitherId}
 import cats.syntax.functor._
 import forex.config.OneFrameConfig
-import forex.domain.Currency.currencyList
 import forex.domain.{Currency, Price, Rate, Timestamp}
 import forex.http.rates.Protocol.GetApiResponse
 import forex.services.rates.Algebra
@@ -22,9 +21,6 @@ import java.util.Optional
 class OneFrameLive[F[_]: Concurrent](config : OneFrameConfig, httpClient: Client[F]) extends Algebra[F] with Http4sClientDsl[F] {
   private var cache: Map[Currency, (Price, Timestamp)] = Map.empty
   override def get(pair: Rate.Pair): F[Error Either Rate] = {
-    if (!validateInputCurrency(pair)) {
-      Left(OneFrameLookupFailed("Invalid input currency")).asLeft[Rate].pure[F]
-    }
     val priceFromCache = getFromCache(pair)
     if (!priceFromCache.isEmpty) {
         priceFromCache.get().asRight[Error].pure[F]
@@ -41,6 +37,9 @@ class OneFrameLive[F[_]: Concurrent](config : OneFrameConfig, httpClient: Client
           )
         )
       responses.map(responseList => {
+        if (responseList.isEmpty) {
+          Left(OneFrameLookupFailed("Look up failed"))
+        }
         responseList.foreach(response => {
           putToCache(response)
         })
@@ -81,12 +80,5 @@ class OneFrameLive[F[_]: Concurrent](config : OneFrameConfig, httpClient: Client
 
   private def putToCache(response: GetApiResponse): Unit = {
     cache += (response.to -> (response.price, response.timestamp))
-  }
-
-  private def validateInputCurrency(pair: Rate.Pair): Boolean = {
-    if (currencyList.contains(pair.from) && currencyList.contains(pair.to))
-      true
-    else
-      false
   }
 }
